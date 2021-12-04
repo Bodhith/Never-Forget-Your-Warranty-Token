@@ -1,5 +1,5 @@
 const express = require('express');
-const services = require('./services/services');
+const path = require('path');
 
 const app = express();
 
@@ -8,24 +8,16 @@ const port = 3000;
 
 app.use(express.static('src'));
 
-app.get('/home', async (req, res) => {
-   
-   services.loadWeb3();
-   
-   var user = await services
-      .getUserType()
-      .then(function(res) {
-         console.log(1, res);
-         return res;
-      });
-   console.log(2, user);
-   if(user == "customer") {
-      res.sendFile("D:\\LEARNING\\MASTERS\\SEM 1\\BLOCK CHAIN\\PROJECT\\PHASE 4\\APP\\src\\customer\\index.html")
-   }
-   else if(user == "executive") {
-      res.sendFile("D:\\LEARNING\\MASTERS\\SEM 1\\BLOCK CHAIN\\PROJECT\\PHASE 4\\APP\\src\\executive\\index.html")
-   }
+app.get('/customer', (req, res) => {
+   res.sendFile("index.html", {
+      root: path.join(__dirname)+"\\src\\customer"
+   });
+});
 
+app.get('/executive', (req, res) => {
+   res.sendFile("index.html", {
+      root: path.join(__dirname)+"\\src\\executive"
+   });
 });
 
 app.listen(port, host, () => {

@@ -728,18 +728,64 @@ const app = {
     });
   }
   
-  async function getContractBalance(contractAddress) {
+  async function getBalance(contractAddress) {
+    let balance = await app.token.instance.methods
+      .getBalance(contractAddress)
+      .then(function(res) {
+        console.log("Contract",  contractAddress, "balance", res);
+        return res;
+      });
+    return balance;
+  }
+
+  async function refund() {
+    let productId = $("#refundTokenInput").val();
+    await app.extraFunctionalities.instance.methods
+      .RefundRequest(productId)
+      .send({from: web3.eth.defaultAccount})
+      .then(function(res) {
+        console.log("Refund", res);
+        getUserTokens();
+        getUserProducts();
+      });
+  }
+
+  async function getTokensCirculation() {
+    $("#tokensCirculationDiv").empty();
+    let balance = await app.token.instance.methods
+      .TokensInCirculation()
+      .call()
+      .then(function(res) {
+        $("#tokensCirculationDiv").append(res);
+        console.log("Tokens in Circulation", res);
+      });
+  }
+
+  async function getTokensRedeemed() {
+    $("#tokensRedeemedDiv").empty();
+    let balance = await app.token.instance.methods
+      .RedeemedTokens()
+      .call()
+      .then(function(res) {
+        $("#tokensRedeemedDiv").append(res);
+        console.log("Tokens in Circulation", res);
+      });
+  }
+
+  async function getContractBalance() {
+    $("#contractBalanceDiv").empty();
+    var contractAddress = app.extraFunctionalities.address;
     var balance = await web3.eth
     .getBalance(contractAddress)
     .then(function(res) {
       console.log("Contract",  contractAddress, "balance", res);
-      return res
-    })
-    return balance;
+      $("#contractBalanceDiv").append(res);
+      return res;
+    }); 
   }
-  
+
   async function registerUser() {
-    let firstName = "ac", lastName = "bc";
+    let firstName = $("#firstNameInput").val(), lastName = $("#secondNameInput").val();
     await app.extraFunctionalities.instance.methods
     ._register(firstName, lastName)
     .send({from: web3.eth.defaultAccount})
@@ -759,24 +805,29 @@ const app = {
   }
   
   async function getUserTokens() {
+    $("#balanceDiv").empty();
+    let account = $("#balanceInput").val();
     let balance = await app.token.instance.methods
-    .balanceOf(web3.eth.defaultAccount)
+    .balanceOf(account)
     .call()
     .then(function(res) {
       console.log("Balance Tokens", res);
+      $("#balanceDiv").append(res);
       return res;
     });
     return balance;
   }
   
   async function buyProduct() {
-    let product = products["Phone"];
-    let amount = 11;
+    let amount = $("#productSelect").val();;
+    let product = amount/10;
     await app.extraFunctionalities.instance.methods
     .Get_NFYW(product)
     .send({from: web3.eth.defaultAccount, value: web3.utils.toWei(""+amount, "ether").toString()})
     .then(function(res) {
       console.log("Purchased", res);
+      getUserTokens();
+      getUserProducts();
     });
   }
   
@@ -786,6 +837,7 @@ const app = {
     .send({from: web3.eth.defaultAccount})
     .then(function(res) {
       console.log("Withdraw Amount", res);
+      getContractBalance();
     });
   }
   
@@ -794,12 +846,19 @@ const app = {
       .getUserProducts()
       .call({from: web3.eth.defaultAccount})
       .then(function(res) {
+        $("#productsDisplayDiv").empty();
         var products = [];
+        let status;
         console.log("User Products", res);
         for(let i=0, n=res[0].length; i<n; i++) {
           if (res[1][i]) {
             products.push(res[0][i])
+            status = "Active";
           }
+          else {
+            status = "Not Active";
+          }
+          $("#productsDisplayDiv").append("<div class='mt-2 row'>"+res[0][i]+" -- "+status+"<div>");
         }
         return products;
       });
@@ -807,33 +866,69 @@ const app = {
   }
   
   async function redeemToken() {
-    let productId = "p5";
+    let productId = $("#redeemTokenInput").val();
     await app.extraFunctionalities.instance.methods
     .Redeem_NFYW(productId)
     .send({from: web3.eth.defaultAccount})
     .then(function(res) {
       console.log("Redeemed Token", res);
+      getUserTokens();
+      getUserProducts();
     });
   }
   
   async function exchangeProduct() {
-    let productId = "p6", product = products["Television"];
+    let productId = $("#exchangeProductInput").val(), product;
+
+    if(productId.includes("p")) product = 1;
+    else if(productId.includes('l')) product = 3;
+    else if(productId.includes('m')) product = 2;
+
     await app.extraFunctionalities.instance.methods
       .ExchangeProduct(productId, product)
       .send({from: web3.eth.defaultAccount})
       .then(function(res) {
         console.log("Exchanged", res);
+        getUserTokens();
+        getUserProducts();
       });
   }
   
+  async function getOwner() {
+    let owner = await app.token.instance.methods
+      .owner()
+      .call()
+      .then(function(res) {
+        return res;
+      });
+      return owner;
+  }
+
+  async function setHomePage() {
+    if(window.location.pathname.includes("customer")) {
+      $("#balanceInput").val(web3.eth.defaultAccount);
+      $("#productSelect").empty();
+      jQuery.each(products, function(product, value) {
+        $("#productSelect").append("<option value="+(value*10)+">"+product+", costs "+(value*10)+"</option>")
+      });
+    }
+    if(!window.location.pathname.includes("customer") && web3.eth.defaultAccount != await getOwner()) {
+      window.location.href = "http://localhost:3000/customer"
+    }
+    else if(!window.location.pathname.includes("executive") && web3.eth.defaultAccount == await getOwner()) {
+      window.location.href = "http://localhost:3000/executive"
+    }
+  }
+
   async function application() {
     await loadWeb3().then(function() {
       console.log("Web3 loaded sucessfully");
     });
-  
+
     app.token.instance = new web3.eth.Contract(app.token.abi, app.token.address);
     app.extraFunctionalities.instance = new web3.eth.Contract(app.extraFunctionalities.abi, app.extraFunctionalities.address);
-  
+
+    await setHomePage();
   }
   
   application();
