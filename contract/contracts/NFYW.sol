@@ -33,7 +33,6 @@ contract Token {
     mapping(address => mapping(address => uint256)) public allowance;
 
 
-
     // Events - fire events on state changes 
     event Transfer(address indexed from, address indexed to, uint256 value);
 
@@ -274,9 +273,13 @@ contract Token {
          else
          return false;
     }
-    
-    function getUserProducts() public returns(string[] memory, bool[] memory) {
-        return (customerdetails[tx.origin].products, customerdetails[tx.origin].productwarranty);
+
+    function getUserProducts() public returns(string[] memory, bool[] memory, uint256[] memory) {
+        uint prop;
+        uint256[] memory expiry = new uint256[](customerdetails[tx.origin].num_of_products);
+        for (prop = 0; prop < customerdetails[tx.origin].num_of_products; prop ++)
+                expiry[prop] = 365-((block.timestamp - customerdetails[tx.origin].time_of_purchase[prop])/60/60/24);
+        return (customerdetails[tx.origin].products, customerdetails[tx.origin].productwarranty, expiry);
     }
 
     function returnpid() public view returns(string memory)

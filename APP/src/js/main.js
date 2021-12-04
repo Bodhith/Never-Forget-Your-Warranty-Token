@@ -529,6 +529,11 @@ const app = {
               "internalType": "bool[]",
               "name": "",
               "type": "bool[]"
+            },
+            {
+              "internalType": "uint256[]",
+              "name": "",
+              "type": "uint256[]"
             }
           ],
           "stateMutability": "nonpayable",
@@ -549,7 +554,7 @@ const app = {
           "constant": true
         }
       ],
-      "address": "0x522c65d403D585F8ECBC44330a4254cfFcc660bb",
+      "address": "0x43C337360d6381B971e1fd4ccF5504d6e16C6C64",
       "instance": ""
     },
     "extraFunctionalities": {
@@ -700,7 +705,7 @@ const app = {
           "type": "function"
         }
       ],
-      "address": "0x92766960cA3D3117538155772307Ab2F57D4c573",
+      "address": "0xdd1E89B999F732A97145BaBD19BAF32d8d74188c",
       "instance": ""
     }
   }
@@ -848,23 +853,25 @@ const app = {
       .then(function(res) {
         $("#productsDisplayDiv").empty();
         var products = [];
-        let status;
+        let status, expiryStatus;
         console.log("User Products", res);
         for(let i=0, n=res[0].length; i<n; i++) {
           if (res[1][i]) {
             products.push(res[0][i])
             status = "Active";
+            expiryStatus = res[2][i]+" days";
           }
           else {
             status = "Not Active";
+            expiryStatus = "N/A"
           }
-          $("#productsDisplayDiv").append("<div class='mt-2 row'>"+res[0][i]+" -- "+status+"<div>");
+          $("#productsDisplayDiv").append("<div class='mt-2 row'>"+res[0][i]+" -- "+status+" --- "+expiryStatus+" <div>");
         }
         return products;
       });
       return userProducts;
   }
-  
+
   async function redeemToken() {
     let productId = $("#redeemTokenInput").val();
     await app.extraFunctionalities.instance.methods
